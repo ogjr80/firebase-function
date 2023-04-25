@@ -1,86 +1,10 @@
+const { gql } = require("graphql-tag");
 
+const typeDefs = gql`
 
-const typeDefs = `
-
-type IoTDevices {
-  deviceId: ID!
-  userId: ID!
-  farmId: ID!
-  type: String!
-  location: Location!
-  data: JSONObject!
-  lastUpdated: String!
-}
-
-type Location {
-  latitude: Float!
-  longitude: Float!
-}
-
-scalar JSONObject
-
-type WeatherData {
-  weatherDataId: ID!
-  farmId: ID!
-  date: String!
-  temperature: Float!
-  humidity: Float!
-  rainfall: Float!
-  windSpeed: Float!
-}
-
-type Farm {
-  farmId: ID!
-  userId: ID!
-  name: String!
-  location: Location!
-  size: Float!
-  unit: Unit!
-  description: String
-  dateCreated: String!
-  crops: [Crop!]!
-  livestocks: [Livestock!]!
-  weatherData: [WeatherData!]!
-  iotDevices: [IoTDevices!]!
-}
-type Livestock {
-  livestockId: ID!
-  farmId: ID!
-  userId: ID!
-  type: String!
-  quantity: Int!
-  healthStatus: String!
-  location: String
-  dateCreated: String!
-}
-type Crop {
-  cropId: ID!
-  farmId: ID!
-  userId: ID!
-  type: String!
-  stage: CropStage!
-  plantingDate: String!
-  harvestDate: String
-  healthStatus: String!
-  dateCreated: String!
-}
-
-enum CropStage {
-  GERMINATION
-  FLOWERING
-  HARVEST
-}
-
-
-type Location {
-  latitude: Float!
-  longitude: Float!
-}
-
-enum Unit {
-  HECTARES
-  ACRES
-}
+"""
+ User Types Definitions
+"""
 type User {
     userId: ID!
     email: String!
@@ -90,108 +14,180 @@ type User {
     dateCreated: String!
     farms: [Farm!]!
   }
-  
-  enum Role {
-    FARMER
-    AGRONOMIST
-    RESEARCHER
-    OTHER
-  }
-  
-  type Query {
-    getUser(userId: ID!): User
-    getUsers: [User!]!
-    getFarm(farmId: ID!): Farm
-    getFarms: [Farm!]!
-    getFarmsByUserId(userId: ID!): [Farm!]!
-    getCrop(cropId: ID!): Crop!
-    getCrops: [Crop!]!
-    getCropsByFarmId(farmId: ID!): [Crop!]!
-    getLivestock(livestockId: ID!): Livestock!
-    getAllLivestock: [Livestock!]!
-    getLivestockByFarmId(farmId: ID!): [Livestock!]!
-    getWeatherData(weatherDataId: ID!): WeatherData!
-    getAllWeatherData: [WeatherData!]!
-    getWeatherDataByFarmId(farmId: ID!): [WeatherData!]!
-    getIoTDevice(deviceId: ID!): IoTDevices!
-    getAllIoTDevices: [IoTDevices!]!
-    getIoTDevicesByFarmId(farmId: ID!): [IoTDevices!]!
-  }
-  
-  type Mutation {
-    createUser(input: CreateUserInput!): User!
-    updateUser(userId: ID!, input: UpdateUserInput!): User!
-    createFarm(input: CreateFarmInput!): Farm!
-    updateFarm(farmId: ID!, input: UpdateFarmInput!): Farm!
-    createCrop(input: CropInput!): Crop!
-    updateCrop(cropId: ID!, input: CropUpdateInput!): Crop!
-    createLivestock(input: LivestockInput!): Livestock!
-    updateLivestock(livestockId: ID!, input: LivestockUpdateInput!): Livestock!
-    createWeatherData(input: WeatherDataInput!): WeatherData!
-    updateWeatherData(weatherDataId: ID!, input: WeatherDataUpdateInput!): WeatherData!
-    createIoTDevice(input: IoTDeviceInput!): IoTDevices!
-    updateIoTDevice(deviceId: ID!, input: IoTDeviceUpdateInput!): IoTDevices!
-  
 
-  }
-  
-  input IoTDeviceInput {
-    userId: ID!
+  enum Role {
+  FARMER
+  AGRONOMIST
+  RESEARCHER
+  OTHER
+}
+
+"""
+Farmer Type Definitions 
+"""
+type Farm {
     farmId: ID!
-    type: String!
-    location: LocationInput!
-    data: JSONObject!
+    userId: ID!
+    user: User!
+    name: String!
+    location: Location!
+    size: Float!
+    unit: Unit!
+    description: String
+    dateCreated: String!
+    crops: [Crop!]!
+    livestocks: [Livestock!]!
+    weatherData: [WeatherData!]!
+  }
+  enum Unit {
+    HECTARES
+    ACRES
   }
   
-  input IoTDeviceUpdateInput {
-    userId: ID
-    farmId: ID
-    type: String
-    location: LocationInput
-    data: JSONObject
-  }
-  
-  input LocationInput {
+  type Location {
     latitude: Float!
     longitude: Float!
   }
-
-input WeatherDataInput {
-  farmId: ID!
-  date: String!
-  temperature: Float!
-  humidity: Float!
-  rainfall: Float!
-  windSpeed: Float!
-}
-
-input WeatherDataUpdateInput {
-  farmId: ID
-  date: String
-  temperature: Float
-  humidity: Float
-  rainfall: Float
-  windSpeed: Float
-}
+""" CROP Type """ 
+type Crop {
+    cropId: ID!
+    farm: Farm!
+    user: User!
+    type: String!
+    stage: CropStage!
+    plantingDate: String!
+    harvestDate: String
+    healthStatus: String!
+    dateCreated: String!
+  }
   
-input LivestockInput {
-  farmId: ID!
-  userId: ID!
-  type: String!
-  quantity: Int!
-  healthStatus: String!
-  location: String
+  enum CropStage {
+    GERMINATION
+    FLOWERING
+    HARVEST
+  }
+  """Livestock Types """ 
+  type Livestock {
+    livestockId: ID!
+    farmId: ID! 
+    userId: ID!
+    farm: Farm!
+    user: User!
+    type: String!
+    quantity: Int!
+    healthStatus: String!
+    location: String
+    dateCreated: String!
+  }
+  
+  """ WeatherData Types """ 
+  type WeatherData {
+    weatherDataId: ID!
+    userId: ID!
+    farmId: ID!
+    farm: Farm!
+    date: String!
+    temperature: Float!
+    humidity: Float!
+    rainfall: Float!
+    windSpeed: Float!
+  }
+
+
+
+
+type Query { 
+    """ User query """
+    getUser(userId: ID!): User
+    getUsers: [User!]!
+
+    """Farm Query Definition """ 
+    getFarm(farmId: ID!): Farm
+    getFarms: [Farm!]!
+    getFarmsByUserId(userId: ID!): [Farm!]!
+
+    """CROP Query Definition """ 
+    getCrop(cropId: ID!): Crop!
+    getCrops: [Crop!]!
+
+    """Livestock Query Definition """ 
+    getLivestock(livestockId: ID!): Livestock!
+    getAllLivestock: [Livestock!]!
+
+    """ WeatherData Query Definitions """ 
+    getAllWeatherData: [WeatherData!]!
+    getWeatherData(weatherDataId: ID!): WeatherData!
+    getWeatherDataByFarmId(farmId: ID!): [WeatherData!]!
+
+   
 }
 
-input LivestockUpdateInput {
-  farmId: ID
-  userId: ID
-  type: String
-  quantity: Int
-  healthStatus: String
-  location: String
+type Mutation { 
+    """  User Mutation""" 
+    createUser(input: CreateUserInput!): User!
+    updateUser(userId: ID!, input: UpdateUserInput!): User!
+
+    """ Farm Mutations """
+    createFarm(input: CreateFarmInput!): Farm!
+    updateFarm(farmId: ID!, input: UpdateFarmInput!): Farm!
+
+    """ CROP Mutation """
+    createCrop(input: CropInput!): Crop!
+    updateCrop(cropId: ID!, input: CropUpdateInput!): Crop!
+    deleteCrop(cropId:ID!): Crop!
+
+    """ Livestock Mutation """ 
+    createLivestock(input: LivestockInput!): Livestock!
+    updateLivestock(livestockId: ID!, input: LivestockUpdateInput!): Livestock!
+    deleteLivestock(livestockId: ID!): Livestock!
+
+    """ WeatherData Mutation """ 
+    createWeatherData(input: WeatherDataInput!): WeatherData!
+    updateWeatherData(weatherDataId: ID!, input: WeatherDataUpdateInput!): WeatherData!
+
+  
 }
-  input CropInput {
+
+""" User Inputs """
+input CreateUserInput {
+    email: String!
+    displayName: String!
+    profileImageURL: String
+    role: Role!
+}
+    
+    input UpdateUserInput {
+    email: String
+    displayName: String
+    profileImageURL: String
+    role: Role
+}
+
+""" Farm Inputs """ 
+input CreateFarmInput {
+    userId: ID!
+    name: String!
+    location: LocationInput!
+    size: Float!
+    unit: Unit!
+    description: String
+    }
+    
+    input UpdateFarmInput {
+    name: String
+    location: LocationInput
+    size: Float
+    unit: Unit
+    description: String
+    }
+    input LocationInput {
+        latitude: Float!
+        longitude: Float!
+        }  
+
+ """ CROP Inputs """ 
+ 
+ input CropInput {
     farmId: ID!
     userId: ID!
     type: String!
@@ -199,9 +195,9 @@ input LivestockUpdateInput {
     plantingDate: String!
     harvestDate: String
     healthStatus: String!
-  }
-  
-  input CropUpdateInput {
+    }
+    
+    input CropUpdateInput {
     farmId: ID
     userId: ID
     type: String
@@ -209,44 +205,46 @@ input LivestockUpdateInput {
     plantingDate: String
     harvestDate: String
     healthStatus: String
-  }
-  input CreateUserInput {
-    email: String!
-    displayName: String!
-    profileImageURL: String
-    role: Role!
-  }
-  
-  input UpdateUserInput {
-    email: String
-    displayName: String
-    profileImageURL: String
-    role: Role
-  }
+    }
 
-  
-  input CreateFarmInput {
-    userId: ID!
-    name: String!
-    location: LocationInput!
-    size: Float!
-    unit: Unit!
-    description: String
-  }
-  
-  input UpdateFarmInput {
-    name: String
-    location: LocationInput
-    size: Float
-    unit: Unit
-    description: String
-  }
-  
-  input LocationInput {
-    latitude: Float!
-    longitude: Float!
-  }
-  
-`  
+    """ Livestock Inputs """ 
+    input LivestockInput {
+        farmId: ID!
+        userId: ID!
+        type: String!
+        quantity: Int!
+        healthStatus: String!
+        location: String
+      }
+      
+      input LivestockUpdateInput {
+        farmId: ID
+        userId: ID
+        type: String
+        quantity: Int
+        healthStatus: String
+        location: String
+      }
 
-module.exports = typeDefs;
+      """ WeatherData Inputs """ 
+      input WeatherDataInput {
+        farmId: ID!
+        date: String!
+        temperature: Float!
+        humidity: Float!
+        rainfall: Float!
+        windSpeed: Float!
+        }
+        
+        input WeatherDataUpdateInput {
+        farmId: ID
+        date: String
+        temperature: Float
+        humidity: Float
+        rainfall: Float
+        windSpeed: Float
+        }
+      
+`
+module.exports = typeDefs; 
+

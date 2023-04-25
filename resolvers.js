@@ -1,330 +1,315 @@
-const admin = require('firebase-admin');
-//const { addDoc, getDocs, doc, updateDoc, getDoc,query, where } = require("@google-cloud/firestore");
-//const { addDoc, getDocs, doc, updateDoc, getDoc,query, where } = require("@firebase/firestore");
-const serviceAccount = require('./serviceaccounts.json');
-
+const admin = require("firebase-admin");
+const serviceAccount = require("./serviceaccounts.json"); 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
-
 const db = admin.firestore();
+module.exports = db; 
 
-const usersCollection = db.collection('users');
-const farmsCollection = db.collection('farms');
-const cropsCollection = db.collection("crops");
-const livestockCollection = db.collection("livestock");
-const weatherDataCollection = db.collection("weatherData");
-const iotDevicesCollection = db.collection("iotDevices");
 
 const resolvers = {
-
-  
   Query: {
-
-    async getUser(_, { userId }) {
-      const userDoc = await db.collection("users").doc(userId).get();
-      return userDoc.exists ? { userId: userDoc.id, ...userDoc.data() } : null;
+    //User Query Resolvers
+    getUser: async (_, { userId }) => {
+      const userDoc = await db.collection('users').doc(userId).get();
+      return userDoc.exists ? userDoc.data() : null;
     },
-    async getUsers() {
-      const usersSnapshot = await db.collection("users").get();
-      return usersSnapshot.docs.map((doc) => ({ userId: doc.id, ...doc.data() }));
+    getUsers: async () => {
+      const usersSnapshot = await db.collection('users').get();
+      return usersSnapshot.docs.map(doc =>({ userId: doc.id, ...doc.data() }));
     },
-
-
-
-    async getFarm(_, { farmId }) {
-      const farmRef = doc(db, 'farms', farmId);
-      const farmSnapshot = await getDoc(farmRef);
-      if (!farmSnapshot.exists()) {
-        throw new Error('Farm not found');
-      }
-      return { farmId: farmSnapshot.id, ...farmSnapshot.data() };
+    //Farm Query Resolvers
+    getFarm: async (_, { farmId }) => {
+      const farmDoc = await db.collection('farms').doc(farmId).get();
+      return farmDoc.exists ? farmDoc.data() : null;
     },
-    async getFarms() {
-      const querySnapshot = await getDocs(farmsCollection);
-      return querySnapshot.docs.map(doc => ({ farmId: doc.id, ...doc.data() }));
+    getFarms: async () => {
+      const farmsSnapshot = await db.collection('farms').get();
+      return farmsSnapshot.docs.map(doc => ({farmid: doc.id, ...doc.data()}));
     },
-    async getFarmsByUserId(_, { userId }) {
-      const userFarmsQuery = query(farmsCollection, where('userId', '==', userId));
-      const querySnapshot = await getDocs(userFarmsQuery);
-      return querySnapshot.docs.map(doc => ({ farmId: doc.id, ...doc.data() }));
-    },
-    async getCrop(_, { cropId }) {
-      const cropRef = doc(db, "crops", cropId);
-      const cropSnapshot = await getDoc(cropRef);
-      if (!cropSnapshot.exists()) {
-        throw new Error("Crop not found");
-      }
-      return { cropId: cropSnapshot.id, ...cropSnapshot.data() };
+    getFarmsByUserId: async (_, { userId }) => {
+      const farmsSnapshot = await db.collection('farms').where('userId', '==', userId).get();
+      return farmsSnapshot.docs.map(doc => doc.data());
     },
 
-    async getCrops() {
-      const querySnapshot = await getDocs(cropsCollection);
-      return querySnapshot.docs.map((doc) => ({
-        cropId: doc.id,
+    //CROP Query Resolvers 
+    getCrop: async (_, { cropId }) => {
+      const cropDoc = await db.collection('crops').doc(cropId).get();
+      return cropDoc.exists ? cropDoc.data() : null;
+    },
+    getCrops: async () => {
+      const cropsSnapshot = await db.collection('crops').get();
+      return cropsSnapshot.docs.map(doc => ({cropId: doc.id, ...doc.data()}));
+    },
+
+    //Livestock Query Resolvers 
+    getLivestock: async (_, { livestockId }) => {
+      const livestockSnapshot = await db.collection("livestocks").doc(livestockId).get();
+      return {
+        ...livestockSnapshot.data(),
+        livestockId: livestockSnapshot.id,
+      };
+    },
+    getAllLivestock: async () => {
+      const livestockSnapshot = await db.collection("livestocks").get();
+      return livestockSnapshot.docs.map(doc => ({
         ...doc.data(),
-      }));
-    },
-    async getIoTDevice(_, { deviceId }) {
-      const iotDeviceRef = doc(db, "iotDevices", deviceId);
-      const iotDeviceSnapshot = await getDoc(iotDeviceRef);
-      if (!iotDeviceSnapshot.exists()) {
-        throw new Error("IoT device not found");
-      }
-      return { deviceId: iotDeviceSnapshot.id, ...iotDeviceSnapshot.data() };
-    },
-
-    async getAllIoTDevices() {
-      const querySnapshot = await getDocs(iotDevicesCollection);
-      return querySnapshot.docs.map((doc) => ({
-        deviceId: doc.id,
-        ...doc.data(),
-      }));
-    },
-
-    async getIoTDevicesByFarmId(_, { farmId }) {
-      const farmIoTDevicesQuery = query(
-        iotDevicesCollection,
-        where("farmId", "==", farmId)
-      );
-      const querySnapshot = await getDocs(farmIoTDevicesQuery);
-      return querySnapshot.docs.map((doc) => ({
-        deviceId: doc.id,
-        ...doc.data(),
-      }));
-    },
-    async getLivestock(_, { livestockId }) {
-      const livestockRef = doc(db, "livestock", livestockId);
-      const livestockSnapshot = await getDoc(livestockRef);
-      if (!livestockSnapshot.exists()) {
-        throw new Error("Livestock not found");
-      }
-      return { livestockId: livestockSnapshot.id, ...livestockSnapshot.data() };
-    },
-
-    async getAllLivestock() {
-      const querySnapshot = await getDocs(livestockCollection);
-      return querySnapshot.docs.map((doc) => ({
         livestockId: doc.id,
-        ...doc.data(),
       }));
     },
 
-    async getLivestockByFarmId(_, { farmId }) {
-      const farmLivestockQuery = query(
-        livestockCollection,
-        where("farmId", "==", farmId)
-      );
-      const querySnapshot = await getDocs(farmLivestockQuery);
-      return querySnapshot.docs.map((doc) => ({
-        livestockId: doc.id,
+    //WeatherData Query Resolvers 
+    getAllWeatherData: async () => {
+      const weatherDataSnapshot = await db.collection("weatherData").get();
+      return weatherDataSnapshot.docs.map(doc => ({
         ...doc.data(),
-      }));
-    },
-
-    async getCropsByFarmId(_, { farmId }) {
-      const farmCropsQuery = query(
-        cropsCollection,
-        where("farmId", "==", farmId)
-      );
-      const querySnapshot = await getDocs(farmCropsQuery);
-      return querySnapshot.docs.map((doc) => ({
-        cropId: doc.id,
-        ...doc.data(),
-      }));
-    },
-    
-    async getWeatherData(_, { weatherDataId }) {
-      const weatherDataRef = doc(db, "weatherData", weatherDataId);
-      const weatherDataSnapshot = await getDoc(weatherDataRef);
-      if (!weatherDataSnapshot.exists()) {
-        throw new Error("Weather data not found");
-      }
-      return { weatherDataId: weatherDataSnapshot.id, ...weatherDataSnapshot.data() };
-    },
-
-    async getAllWeatherData() {
-      const querySnapshot = await getDocs(weatherDataCollection);
-      return querySnapshot.docs.map((doc) => ({
         weatherDataId: doc.id,
-        ...doc.data(),
       }));
     },
-
-    async getWeatherDataByFarmId(_, { farmId }) {
-      const farmWeatherDataQuery = query(
-        weatherDataCollection,
-        where("farmId", "==", farmId)
-      );
-      const querySnapshot = await getDocs(farmWeatherDataQuery);
-      return querySnapshot.docs.map((doc) => ({
+    getWeatherData: async (_, { weatherDataId }) => {
+      const weatherDataSnapshot = await db.collection("weatherData").doc(weatherDataId).get();
+      return {
+        ...weatherDataSnapshot.data(),
+        weatherDataId: weatherDataSnapshot.id,
+      };
+    },
+    getWeatherDataByFarmId: async (_, { farmId }) => {
+      const querySnapshot = await db.collection("weatherData").where("farmId", "==", farmId).get();
+      return querySnapshot.docs.map(doc => ({
+        ...doc.data(),
         weatherDataId: doc.id,
-        ...doc.data(),
       }));
     },
+   
   },
-  User: {
-    async farms(parent) {
-      const farmsSnapshot = await db
-        .collection("farms")
-        .where("userId", "==", parent.userId)
-        .get();
-      return farmsSnapshot.docs.map((doc) => ({ farmId: doc.id, ...doc.data() }));
-    },
-  },
-
-
-  Farm: {
-    async weatherData(parent) {
-      const farmWeatherDataQuery = query(
-        weatherDataCollection,
-        where("farmId", "==", parent.farmId)
-      );
-      const querySnapshot = await getDocs(farmWeatherDataQuery);
-      return querySnapshot.docs.map((doc) => ({
-        weatherDataId: doc.id,
-        ...doc.data(),
-      }));
-    },
-    
-    async iotDevices(parent) {
-      const farmIoTDevicesQuery = query(
-        iotDevicesCollection,
-        where("farmId", "==", parent.farmId)
-      );
-      const querySnapshot = await getDocs(farmIoTDevicesQuery);
-      return querySnapshot.docs.map((doc) => ({
-        deviceId: doc.id,
-        ...doc.data(),
-      }));
-    },
-    async crops(parent) {
-      const farmCropsQuery = query(
-        cropsCollection,
-        where("farmId", "==", parent.farmId)
-      );
-      const querySnapshot = await getDocs(farmCropsQuery);
-      return querySnapshot.docs.map((doc) => ({
-        cropId: doc.id,
-        ...doc.data(),
-      }));
-    },
-    async livestocks(parent) {
-      const farmLivestockQuery = query(
-        livestockCollection,
-        where("farmId", "==", parent.farmId)
-      );
-      const querySnapshot = await getDocs(farmLivestockQuery);
-      return querySnapshot.docs.map((doc) => ({
-        livestockId: doc.id,
-        ...doc.data(),
-      }));
-    },
-
-  },
- 
   Mutation: {
-    async createUser(_, { input }) {
-      const newUserRef = await db.collection("users").add(input);
-      const newUserDoc = await newUserRef.get();
-      return { userId: newUserRef.id, ...newUserDoc.data() };
-    },
-    async updateUser(_, { userId, input }) {
-      await db.collection("users").doc(userId).update(input);
-      const updatedUserDoc = await db.collection("users").doc(userId).get();
-      return { userId, ...updatedUserDoc.data() };
-    },
-    // async deleteUser(_, { userId }) {
-    //   await db.collection("users").doc(userId).delete();
-    //   return userId;
-    // },
 
-
-
-
-    async createLivestock(_, { input }) {
-      const newLivestock = {
+    //User Mutation
+    createUser: async (_, { input }) => {
+      const newUser = {
         ...input,
+        userId: db.collection('users').doc().id,
         dateCreated: new Date().toISOString(),
       };
-      const livestockDocRef = await addDoc(livestockCollection, newLivestock);
-      return { livestockId: livestockDocRef.id, ...newLivestock };
+      await db.collection('users').doc(newUser.userId).set(newUser);
+      return newUser;
+    },
+    updateUser: async (_, { userId, input }) => {
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        throw new Error(`User with ID ${userId} not found.`);
+      }
+
+      const updatedUser = {
+        ...userDoc.data(),
+        ...input,
+      };
+
+      await userRef.update(updatedUser);
+
+      return updatedUser;
     },
 
-    async updateLivestock(_, { livestockId, input }) {
-      const livestockRef = doc(db, "livestock", livestockId);
-      await updateDoc(livestockRef, input);
-      const updatedLivestockSnapshot = await getDoc(livestockRef);
-      return { livestockId: updatedLivestockSnapshot.id, ...updatedLivestockSnapshot.data() };
-    },
-    async createFarm(_, { input }) {
+    //Farm Mutation
+    createFarm: async (_, { input }) => {
       const newFarm = {
         ...input,
+        farmId: db.collection('farms').doc().id,
         dateCreated: new Date().toISOString(),
       };
-      const farmDocRef = await addDoc(farmsCollection, newFarm);
-      return { farmId: farmDocRef.id, ...newFarm };
+      await db.collection('farms').doc(newFarm.farmId).set(newFarm);
+      return newFarm;
     },
-    
-    async updateFarm(_, { farmId, input }) {
-      const farmRef = doc(db, 'farms', farmId);
-      await updateDoc(farmRef, input);
-      const updatedFarmSnapshot = await getDoc(farmRef);
-      return { farmId: updatedFarmSnapshot.id, ...updatedFarmSnapshot.data() };
-    },
-    async createWeatherData(_, { input }) {
-      const newWeatherData = {
+    updateFarm: async (_, { farmId, input }) => {
+      const farmRef = db.collection('farms').doc(farmId);
+      const farmDoc = await farmRef.get();
+
+      if (!farmDoc.exists) {
+        throw new Error(`Farm with ID ${farmId} not found.`);
+      }
+
+      const updatedFarm = {
+        ...farmDoc.data(),
         ...input,
       };
-      const weatherDataDocRef = await addDoc(weatherDataCollection, newWeatherData);
-      return { weatherDataId: weatherDataDocRef.id, ...newWeatherData };
+
+      await farmRef.update(updatedFarm);
+
+      return updatedFarm;
     },
 
-    async updateWeatherData(_, { weatherDataId, input }) {
-      const weatherDataRef = doc(db, "weatherData", weatherDataId);
-      await updateDoc(weatherDataRef, input);
-      const updatedWeatherDataSnapshot = await getDoc(weatherDataRef);
-      return { weatherDataId: updatedWeatherDataSnapshot.id, ...updatedWeatherDataSnapshot.data() };
-    },
+    //CROP Mutation 
     async createCrop(_, { input }) {
-      const newCrop = {
+      const newCropData = {
         ...input,
         dateCreated: new Date().toISOString(),
       };
-      const cropDocRef = await addDoc(cropsCollection, newCrop);
-      return { cropId: cropDocRef.id, ...newCrop };
-    },
-    async updateCrop(_, { cropId, input }) {
-      const cropRef = doc(db, "crops", cropId);
-      await updateDoc(cropRef, input);
-      const updatedCropSnapshot = await getDoc(cropRef);
-      return { cropId: updatedCropSnapshot.id, ...updatedCropSnapshot.data() };
-    },
-    async createIoTDevice(_, { input }) {
-      const newIoTDevice = {
-        ...input,
-        lastUpdated: new Date().toISOString(),
+      const cropRef = await db.collection("crops").add(newCropData);
+      const crop = await cropRef.get();
+      
+      // Add the cropId using the document ID from Firebase
+      return {
+        ...crop.data(),
+        cropId: crop.id,
+        farmId: farm.id,
+        userId: user.id
       };
-      const iotDeviceDocRef = await addDoc(iotDevicesCollection, newIoTDevice);
-      return { deviceId: iotDeviceDocRef.id, ...newIoTDevice };
     },
-    
-    async updateIoTDevice(_, { deviceId, input }) {
-      const iotDeviceRef = doc(db, "iotDevices", deviceId);
-      await updateDoc(iotDeviceRef, { ...input, lastUpdated: new Date().toISOString() });
-      const updatedIoTDeviceSnapshot = await getDoc(iotDeviceRef);
-      return { deviceId: updatedIoTDeviceSnapshot.id, ...updatedIoTDeviceSnapshot.data() };
+    updateCrop: async (_, { cropId, input }) => {
+      const cropDoc = db.collection('crops').doc(cropId);
+      await cropDoc.update(input);
+      const updatedCrop = await cropDoc.get();
+      return updatedCrop.exists ? updatedCrop.data() : null;
     },
-    async updateFarm(_, { farmId, input }) {
-      const farmRef = doc(db, 'farms', farmId);
-      await updateDoc(farmRef, input);
-      const updatedFarmSnapshot = await getDoc(farmRef);
-      return { farmId: updatedFarmSnapshot.id, ...updatedFarmSnapshot.data() };
+    deleteCrop: async (_, { cropId }) => {
+      await db.collection('crops').doc(cropId).delete();
+      return `Crop with ID ${cropId} has been deleted`;
+    },
+    //Livestock Mutation 
+    createLivestock: async (_, { input }) => {
+      const newLivestockData = {
+        ...input,
+        dateCreated: new Date().toISOString(),
+      };
+      const livestockRef = await db.collection("livestocks").add(newLivestockData);
+      const livestock = await livestockRef.get();
+      
+      return {
+        ...livestock.data(),
+        livestockId: livestock.id,
+      };
+    },
+    updateLivestock: async (_, { livestockId, input }) => {
+      const livestockRef = db.collection("livestocks").doc(livestockId);
+      await livestockRef.update(input);
+      
+      const updatedLivestock = await livestockRef.get();
+      
+      return {
+        ...updatedLivestock.data(),
+        livestockId: updatedLivestock.id,
+      };
+    },
+    deleteLivestock: async (_, { livestockId }) => {
+      const livestockRef = db.collection("livestocks").doc(livestockId);
+      const deletedLivestock = await livestockRef.get();
+      
+      await livestockRef.delete();
+      
+      return {
+        ...deletedLivestock.data(),
+        livestockId: deletedLivestock.id,
+      };
+    },
+    //WeatherData Mutation
+    createWeatherData: async (_, { input }) => {
+      const newWeatherDataRef = await db.collection("weatherData").add(input);
+      const newWeatherDataSnapshot = await newWeatherDataRef.get();
+      return {
+        ...newWeatherDataSnapshot.data(),
+        weatherDataId: newWeatherDataSnapshot.id,
+      };
+    },
+    updateWeatherData: async (_, { weatherDataId, input }) => {
+      const weatherDataRef = db.collection("weatherData").doc(weatherDataId);
+      await weatherDataRef.update(input);
+      const updatedWeatherDataSnapshot = await weatherDataRef.get();
+      return {
+        ...updatedWeatherDataSnapshot.data(),
+        weatherDataId: updatedWeatherDataSnapshot.id,
+      };
+    },
+
+  },
+
+  //Chaining in Mutations
+  //User Chaining
+  User: {
+    farms: async (parent) => {
+      const userId = parent.userId;
+      const farmsSnapshot = await db.collection('farms').where('userId', '==', userId).get();
+      return farmsSnapshot.docs.map(doc => ({farmId:doc.id, ...doc.data()}));
     },
   },
-  
- 
+
+  //Farm Chaining
+  Farm: {
+    user: async (parent) => {
+      const userId = parent.userId;
+      const userDoc = await db.collection('users').doc(userId).get();
+      return userDoc.exists ? userDoc.data() : null;
+    },
+    crops: async (parent) => {
+      const farmId = parent.farmId;
+      const cropsSnapshot = await db.collection('crops').where('farmId', '==', farmId).get();
+      return cropsSnapshot.docs.map(doc => ({cropId: doc.id, ...doc.data()}));
+    },
+    livestocks: async (parent) => {
+      const querySnapshot = await db.collection("livestocks").where("farmId", "==", parent.farmId).get();
+      if (querySnapshot.empty) {
+        return [];
+      }
+      return querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        livestockId: doc.id,
+      }));
+    },
+    weatherData: async (parent) => {
+      const querySnapshot = await db.collection("weatherData").where("farmId", "==", parent.farmId).get();
+      if (querySnapshot.empty) {
+        return [];
+      }
+      return querySnapshot.docs.map((doc) => ({
+        ...doc.data(),
+        weatherDataId: doc.id,
+      }));
+    },
+    // Add other resolvers for crops, livestocks, etc.
+  },
+
+  //Crop Chaining 
+  Crop: {
+    farm: async (parent) => {
+      const farmId = parent.farmId;
+      const farmDoc = await db.collection('farms').doc(farmId).get();
+      return farmDoc.exists ? farmDoc.data() : null;
+    },
+    user: async (parent) => {
+      const userId = parent.userId;
+      const userDoc = await db.collection('users').doc(userId).get();
+      return userDoc.exists ? userDoc.data() : null;
+    },
+  },
+  //Livestock Chaining
+  Livestock: {
+    farm: async (parent) => {
+      const farmId = parent.farmId;
+      const farmSnapshot = await db.collection("farms").doc(farmId).get();
+      
+      return { farmId: farmSnapshot.id, ...farmSnapshot.data() };
+    },
+    user: async (parent) => {
+      const userId = parent.userId;
+      const userSnapshot = await db.collection("users").doc(userId).get();
+      
+      return { userId: userSnapshot.id, ...userSnapshot.data() };
+    },
+  },
+
+  //WeaterData chaining 
+  WeatherData: {
+    farm: async (parent) => {
+      const farmSnapshot = await db.collection("farms").doc(parent.farmId).get();
+      return {
+        ...farmSnapshot.data(),
+        farmId: farmSnapshot.id,
+      };
+    },
+  },
 };
+
 
 module.exports = resolvers;
 
